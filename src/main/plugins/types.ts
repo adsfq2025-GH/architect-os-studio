@@ -54,6 +54,16 @@ export interface FidelityReport {
   threshold: number
 }
 
+/** Design Quality Score (DIOS) — advisory premium-quality score per compile. */
+export interface DesignReport {
+  overall: number
+  mode: string
+  pass: boolean
+  min_overall: number
+  gate_enforced: boolean
+  pages: Array<{ id: string; score: number }>
+}
+
 export interface CompileResult {
   ok: boolean
   builder: string
@@ -64,6 +74,8 @@ export interface CompileResult {
   acceptance: { result: 'PASS' | 'FAIL'; passed: number; total: number }
   fidelity: FidelityReport | null
   validation: { result: 'PASS' | 'FAIL'; passed: number; total: number } | null
+  /** Design Quality Score (advisory) — absent on older engines */
+  design?: DesignReport | null
   /** import-round-trip and other live-only gates */
   needsLive: string[]
   /** human-readable error, already mapped (never a raw stack) */

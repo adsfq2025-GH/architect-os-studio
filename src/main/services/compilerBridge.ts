@@ -86,6 +86,14 @@ function aiEnv(): Record<string, string> {
   return env
 }
 
+/** Non-secret engine env (design mode, etc.). Safe to compute for every command. */
+function engineEnv(): Record<string, string> {
+  const env: Record<string, string> = {}
+  const mode = settingsStore.get('designMode') as string | undefined
+  if (mode) env.AOS_DESIGN_MODE = mode
+  return env
+}
+
 function resolvePython(): string {
   const override = settingsStore.get('pythonPath') as string | undefined
   if (override) return override
@@ -123,8 +131,8 @@ export function runBridge(
   record(rec)
   const started = Date.now()
 
-  // Inject AI creds via env only (never argv/logs). rec.argv above already omits them.
-  const childEnv = { ...process.env, ...aiEnv() }
+  // Inject AI creds + engine settings via env only (never argv/logs). rec.argv omits them.
+  const childEnv = { ...process.env, ...engineEnv(), ...aiEnv() }
 
   return new Promise((resolve) => {
     const child = spawn(python, [bridge, payload], { cwd: engine, env: childEnv })

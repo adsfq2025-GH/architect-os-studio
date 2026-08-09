@@ -39,6 +39,41 @@ export default function QA({ projectId }: { projectId: string }) {
         ))}
       </div>
 
+      {r.design && (
+        <div className="card mt-6 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="font-medium text-ink-100">Design Quality Score</div>
+              <div className="text-xs text-ink-400">
+                {r.design.mode} standard · target {r.design.min_overall}+
+                {!r.design.gate_enforced && ' · advisory'}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`text-2xl font-bold ${r.design.overall >= r.design.min_overall ? 'text-emerald-300' : 'text-amber-300'}`}>
+                {r.design.overall}
+                <span className="text-sm text-ink-500">/100</span>
+              </span>
+              {r.design.overall >= r.design.min_overall
+                ? <Badge tone="ok">PREMIUM</Badge>
+                : <Badge tone="warn">BELOW TARGET</Badge>}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+            {r.design.pages.map((p) => (
+              <div key={p.id} className="flex items-center justify-between text-sm">
+                <span className="text-ink-300">{p.id.replace('page-', '')}</span>
+                <span className={p.score >= r.design!.min_overall ? 'text-emerald-300' : 'text-amber-300'}>{p.score}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-ink-500">
+            Structural design quality (hierarchy, type, spacing, composition, conversion, accessibility).
+            Per-page issues are in the design report (Diagnostics / Downloads).
+          </p>
+        </div>
+      )}
+
       <div className="mt-6 flex justify-between">
         <button className="btn-ghost" onClick={() => go({ name: 'blueprint', projectId })}>Back</button>
         <button className="btn-primary" onClick={() => go({ name: 'output', projectId })}>Continue → Download</button>

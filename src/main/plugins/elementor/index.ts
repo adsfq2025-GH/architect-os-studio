@@ -75,6 +75,7 @@ async function compile(req: CompileRequest, onEvent: (e: StageEvent) => void): P
     acceptance: d.acceptance,
     fidelity: d.fidelity,
     validation: d.validation,
+    design: d.design ?? null,
     needsLive: d.needsLive ?? ['import-round-trip'],
     reportPaths: d.reportPaths ?? [],
     error: d.error

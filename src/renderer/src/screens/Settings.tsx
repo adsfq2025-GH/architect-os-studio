@@ -42,6 +42,13 @@ export default function Settings() {
             <option value="balanced">Balanced</option><option value="fast">Fast</option><option value="thorough">Thorough</option>
           </select>
         </Field>
+        <Field label="Design standard">
+          <select className="input" value={local.designMode || 'premium'} onChange={(e) => set({ designMode: e.target.value as S['designMode'] })}>
+            <option value="premium">Premium (elevate — recommended)</option>
+            <option value="professional">Professional (improve)</option>
+            <option value="exact">Exact (reproduce)</option>
+          </select>
+        </Field>
         <Field label="AI provider (mockup analysis)">
           <select className="input" value={local.aiProvider} onChange={(e) => set({ aiProvider: e.target.value })}>
             <option value="none">None (import blueprints)</option><option value="anthropic">Anthropic</option><option value="openai">OpenAI</option>

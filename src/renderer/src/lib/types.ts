@@ -38,6 +38,7 @@ export interface Settings {
   autoUpdates: boolean
   aiProvider: string
   aiModel?: string
+  designMode: 'exact' | 'professional' | 'premium'
   performanceMode: 'balanced' | 'fast' | 'thorough'
   uiTheme: 'dark' | 'light' | 'system'
   autoDownload: boolean
@@ -94,6 +95,10 @@ export interface CompileResult {
   acceptance: { result: 'PASS' | 'FAIL'; passed: number; total: number }
   fidelity: { overall: number; dimensions: Record<string, number>; pass: boolean; threshold: number } | null
   validation: { result: 'PASS' | 'FAIL'; passed: number; total: number } | null
+  design?: {
+    overall: number; mode: string; pass: boolean; min_overall: number; gate_enforced: boolean
+    pages: Array<{ id: string; score: number }>
+  } | null
   needsLive: string[]
   error?: string
 }

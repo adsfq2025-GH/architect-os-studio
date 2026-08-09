@@ -17,6 +17,7 @@ export interface Settings {
   autoUpdates: boolean
   aiProvider: string            // "none" | "openai" | "anthropic" | ...
   aiModel?: string              // optional model override (e.g. "claude-3-5-sonnet-latest", "gpt-4o")
+  designMode: 'exact' | 'professional' | 'premium'  // DIOS generation standard
   performanceMode: 'balanced' | 'fast' | 'thorough'
   uiTheme: 'dark' | 'light' | 'system'
   autoDownload: boolean
@@ -37,6 +38,7 @@ function defaults(): Settings {
     autoBackup: true,
     autoUpdates: true,
     aiProvider: 'none',
+    designMode: 'premium',
     performanceMode: 'balanced',
     uiTheme: 'dark',
     autoDownload: true
