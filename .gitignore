@@ -1,0 +1,9 @@
+node_modules/
+out/
+release/
+dist-types-node/
+engine/
+*.log
+.DS_Store
+.env
+.env.*

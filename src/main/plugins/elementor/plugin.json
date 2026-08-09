@@ -1,0 +1,9 @@
+{
+  "id": "elementor",
+  "name": "Elementor",
+  "version": "1.0.0",
+  "description": "Official Elementor Website Kit (manifest v2.0 + WXR content). Imports via Elementor → Tools → Import Kit.",
+  "outputExtension": "zip",
+  "status": "stable",
+  "qaDimensions": ["colors", "typography", "spacing", "layout", "responsiveness", "motion"]
+}

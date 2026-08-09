@@ -1,0 +1,76 @@
+# Builds ArchitectOSStudioSetup.msi on a Windows runner — so NOBODY needs a local Windows
+# dev machine. Push a tag (v1.0.0) or run manually; download the MSI from the run's Artifacts
+# (and, for tags, from the auto-created GitHub Release).
+name: Build Windows MSI
+
+on:
+  workflow_dispatch:
+    inputs:
+      engine_ref:
+        description: 'Architect-OS engine git ref (branch/tag) if in a separate repo'
+        required: false
+        default: 'main'
+  push:
+    tags: ['v*']
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Studio
+        uses: actions/checkout@v4
+
+      # The engine (Architect-OS repo) is the compiler backend bundled into the app.
+      # Option A: it's committed alongside as ./engine already — then this step is a no-op.
+      # Option B: check it out from its own repo into ./engine-src and point ENGINE_SRC at it.
+      - name: Checkout engine (Architect-OS)
+        if: ${{ hashFiles('engine/bridge.py') == '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.ENGINE_REPO || github.repository_owner }}/Architect-OS
+          ref: ${{ github.event.inputs.engine_ref || 'main' }}
+          path: engine-src
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set ENGINE_SRC
+        shell: pwsh
+        run: |
+          if (Test-Path engine/bridge.py) { echo "ENGINE_SRC=$(Resolve-Path engine)" >> $env:GITHUB_ENV }
+          else { echo "ENGINE_SRC=$(Resolve-Path engine-src)" >> $env:GITHUB_ENV }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bundle engine + Python runtime + icon
+        run: npm run prep
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build app
+        run: npm run build
+
+      - name: Package MSI
+        # Provide signing secrets to sign automatically (optional):
+        #   CSC_LINK (base64 or path to .pfx), CSC_KEY_PASSWORD
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: npx electron-builder --win msi --publish never
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArchitectOSStudioSetup
+          path: release/*.msi
+
+      - name: Attach MSI to Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.msi
