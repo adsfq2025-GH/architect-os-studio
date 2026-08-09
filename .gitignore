@@ -7,3 +7,6 @@ engine/
 .DS_Store
 .env
 .env.*
+
+# TypeScript incremental build info
+*.tsbuildinfo

@@ -68,6 +68,24 @@ function resolveEngineDir(): string {
   return packaged // return the expected path even if missing; caller surfaces a clean error
 }
 
+/**
+ * AI-vision credentials for the engine. Read from the ENCRYPTED settings store at spawn time
+ * and passed to the child ONLY via environment variables — never argv, never the command log —
+ * so the API key can't leak into the Developer Diagnostics panel or any log file.
+ * Returns an empty object when AI is off or no key is set (engine then uses the deterministic
+ * scaffold). Never call this from anything that serializes its result to the UI.
+ */
+function aiEnv(): Record<string, string> {
+  const provider = (settingsStore.get('aiProvider') as string | undefined) || 'none'
+  if (provider === 'none') return {}
+  const key = settingsStore.getSecret('aiApiKey')
+  if (!key) return {}
+  const env: Record<string, string> = { AOS_AI_PROVIDER: provider, AOS_AI_KEY: key }
+  const model = settingsStore.get('aiModel') as string | undefined
+  if (model) env.AOS_AI_MODEL = model
+  return env
+}
+
 function resolvePython(): string {
   const override = settingsStore.get('pythonPath') as string | undefined
   if (override) return override
@@ -105,8 +123,11 @@ export function runBridge(
   record(rec)
   const started = Date.now()
 
+  // Inject AI creds via env only (never argv/logs). rec.argv above already omits them.
+  const childEnv = { ...process.env, ...aiEnv() }
+
   return new Promise((resolve) => {
-    const child = spawn(python, [bridge, payload], { cwd: engine })
+    const child = spawn(python, [bridge, payload], { cwd: engine, env: childEnv })
     let out = ''
     let err = ''
     const finish = (r: BridgeResponse) => {

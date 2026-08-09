@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useApp } from '../store'
 import { studio } from '../lib/ipc'
 import { Field } from '../components/ui'
@@ -8,10 +8,21 @@ export default function Settings() {
   const { settings, backends, saveSettings, appInfo } = useApp()
   const [local, setLocal] = useState<S | null>(settings)
   const [saved, setSaved] = useState(false)
+  // API key is a secret: never loaded into the renderer. We only track whether one is stored,
+  // and hold any newly-typed value transiently until Save writes it to the encrypted store.
+  const [keyInput, setKeyInput] = useState('')
+  const [keySaved, setKeySaved] = useState(false)
+  useEffect(() => { studio.settings.hasSecret('aiApiKey').then(setKeySaved) }, [])
   if (!settings || !local) return <div className="p-8 text-ink-400">Loading…</div>
 
   const set = (patch: Partial<S>) => setLocal({ ...local, ...patch })
-  const save = async () => { await saveSettings(local); setSaved(true); setTimeout(() => setSaved(false), 1500) }
+  const save = async () => {
+    await saveSettings(local)
+    // Only write the key when the user typed one this session (blank = keep existing).
+    if (keyInput) { await studio.settings.setSecret('aiApiKey', keyInput); setKeySaved(true); setKeyInput('') }
+    setSaved(true); setTimeout(() => setSaved(false), 1500)
+  }
+  const clearKey = async () => { await studio.settings.setSecret('aiApiKey', ''); setKeySaved(false); setKeyInput('') }
   const pick = async (key: 'downloadsDir' | 'projectLocation') => { const d = await studio.files.pickFolder(); if (d) set({ [key]: d } as Partial<S>) }
 
   return (
@@ -36,6 +47,34 @@ export default function Settings() {
             <option value="none">None (import blueprints)</option><option value="anthropic">Anthropic</option><option value="openai">OpenAI</option>
           </select>
         </Field>
+        {local.aiProvider !== 'none' && (
+          <>
+            <div className="col-span-2">
+              <label className="label">
+                {local.aiProvider === 'anthropic' ? 'Anthropic API key' : 'OpenAI API key'}
+                {keySaved && <span className="ml-2 text-xs text-emerald-300">saved ✓</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  className="input" type="password" autoComplete="off"
+                  placeholder={keySaved ? '•••••••••••• (leave blank to keep)' : 'Paste your API key'}
+                  value={keyInput} onChange={(e) => setKeyInput(e.target.value)}
+                />
+                {keySaved && <button className="btn-ghost shrink-0" onClick={clearKey}>Remove</button>}
+              </div>
+              <p className="mt-1 text-xs text-ink-500">
+                Stored encrypted on this PC and passed to the local engine only. It never leaves your machine except to call {local.aiProvider === 'anthropic' ? 'Anthropic' : 'OpenAI'} directly, and never appears in logs.
+              </p>
+            </div>
+            <Field label="Model (optional)">
+              <input
+                className="input" value={local.aiModel || ''}
+                onChange={(e) => set({ aiModel: e.target.value })}
+                placeholder={local.aiProvider === 'anthropic' ? 'claude-3-5-sonnet-latest' : 'gpt-4o'}
+              />
+            </Field>
+          </>
+        )}
       </Section>
 
       <Section title="Files">

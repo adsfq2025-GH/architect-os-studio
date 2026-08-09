@@ -16,6 +16,7 @@ export interface Settings {
   autoBackup: boolean
   autoUpdates: boolean
   aiProvider: string            // "none" | "openai" | "anthropic" | ...
+  aiModel?: string              // optional model override (e.g. "claude-3-5-sonnet-latest", "gpt-4o")
   performanceMode: 'balanced' | 'fast' | 'thorough'
   uiTheme: 'dark' | 'light' | 'system'
   autoDownload: boolean
@@ -61,6 +62,15 @@ class SettingsStore {
       ? safeStorage.encryptString(value).toString('base64')
       : Buffer.from(value).toString('base64')
     this.store.set(`__secret_${key}`, enc)
+  }
+  /** True if a secret is stored — used by the UI to show "saved" WITHOUT ever sending the value. */
+  hasSecret(key: string): boolean {
+    if (!SECRET_KEYS.includes(key)) return false
+    return !!this.store.get(`__secret_${key}`)
+  }
+  clearSecret(key: string) {
+    if (!SECRET_KEYS.includes(key)) return
+    this.store.delete(`__secret_${key}`)
   }
   getSecret(key: string): string | null {
     const raw = this.store.get(`__secret_${key}`) as string | undefined

@@ -37,6 +37,7 @@ export interface Settings {
   autoBackup: boolean
   autoUpdates: boolean
   aiProvider: string
+  aiModel?: string
   performanceMode: 'balanced' | 'fast' | 'thorough'
   uiTheme: 'dark' | 'light' | 'system'
   autoDownload: boolean

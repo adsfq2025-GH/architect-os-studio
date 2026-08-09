@@ -16,7 +16,8 @@ const api = {
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
     update: (patch: Record<string, unknown>) => ipcRenderer.invoke('settings:update', patch),
-    setSecret: (key: string, val: string) => ipcRenderer.invoke('settings:setSecret', key, val)
+    setSecret: (key: string, val: string) => ipcRenderer.invoke('settings:setSecret', key, val),
+    hasSecret: (key: string) => ipcRenderer.invoke('settings:hasSecret', key)
   },
   backends: { list: () => ipcRenderer.invoke('backends:list') },
   projects: {

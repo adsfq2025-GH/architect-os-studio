@@ -28,7 +28,12 @@ export function registerIpc(getWin: GetWin): void {
   ipcMain.handle('app:info', () => ({ version: app.getVersion(), platform: process.platform, ...engineInfo() }))
   ipcMain.handle('settings:get', () => settingsStore.all())
   ipcMain.handle('settings:update', (_e, patch) => { settingsStore.update(patch); return settingsStore.all() })
-  ipcMain.handle('settings:setSecret', (_e, key: string, val: string) => { settingsStore.setSecret(key, val); return true })
+  ipcMain.handle('settings:setSecret', (_e, key: string, val: string) => {
+    // empty string means "clear"; the raw value never travels back to the renderer
+    if (val) settingsStore.setSecret(key, val); else settingsStore.clearSecret(key)
+    return true
+  })
+  ipcMain.handle('settings:hasSecret', (_e, key: string) => settingsStore.hasSecret(key))
   ipcMain.handle('backends:list', () => pluginManager.list())
 
   // ---------- projects ----------
