@@ -60,16 +60,11 @@ jobs:
         run: npm run build
 
       - name: Package MSI (unsigned)
-        # Unsigned by default — installs fine internally; SmartScreen may warn on first run.
-        # Force-clear all code-signing envs so a stray/empty WIN_CSC_LINK secret can't break the
-        # build, and disable auto-discovery. To sign later, delete this step's empty CSC_* lines
-        # and instead set CSC_LINK (base64 .pfx) + CSC_KEY_PASSWORD from real secrets.
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          CSC_LINK: ''
-          CSC_KEY_PASSWORD: ''
-          WIN_CSC_LINK: ''
-          WIN_CSC_KEY_PASSWORD: ''
+        # UNSIGNED build — no code-signing env vars are defined at all. (An EMPTY CSC_LINK/
+        # WIN_CSC_LINK is worse than none: electron-builder treats "" as a path and fails with
+        # "not a file". So we define nothing here.) Installs fine internally; SmartScreen may
+        # warn on first run. To sign later, add a separate step that sets CSC_LINK (base64 .pfx)
+        # + CSC_KEY_PASSWORD from real secrets.
         run: npx electron-builder --win msi --publish never
 
       - name: Upload MSI artifact
