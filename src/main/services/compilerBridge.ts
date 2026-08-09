@@ -136,10 +136,13 @@ export function runBridge(
 
       if (env && typeof env.ok === 'boolean') {
         if (env.ok) {
-          finish({ ok: true, data: env.result, stderr: err, rawStdout: out })
+          // Strict protocol wraps the payload in `result`; older engines returned the payload
+          // at the top level. Tolerate both so app/engine version skew can't break analysis.
+          const data = env.result !== undefined ? env.result : env
+          finish({ ok: true, data, stderr: err, rawStdout: out })
         } else {
-          logger.error(`bridge ${command} engine error: ${env.error}\n${env.traceback || ''}`)
-          finish({ ok: false, error: env.error || 'ENGINE_ERROR', traceback: env.traceback, stderr: err, rawStdout: out })
+          logger.error(`bridge ${command} engine error: ${env.error || env.reason}\n${env.traceback || ''}`)
+          finish({ ok: false, error: env.error || env.reason || 'ENGINE_ERROR', traceback: env.traceback, stderr: err, rawStdout: out })
         }
         return
       }
