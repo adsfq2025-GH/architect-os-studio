@@ -16,6 +16,9 @@ on:
 jobs:
   build-msi:
     runs-on: windows-latest
+    # allow the built-in token to create a Release and attach the MSI on tag builds
+    permissions:
+      contents: write
     steps:
       - name: Checkout Studio
         uses: actions/checkout@v4
