@@ -50,10 +50,12 @@ dev repo path), locates Python, and runs `engine/bridge.py` with a JSON command:
 python bridge.py '{"command":"compile","args":{"irDir":...,"projectDir":...,"slug":...,"builder":"elementor"}}'
 ```
 
-- **Result**: one JSON object on the last stdout line (kit path, sha, QA/acceptance/fidelity/
-  validation, needs-live gates, report paths).
-- **Live logs**: `STAGE|status|detail|progress` lines on stderr, streamed to the UI's log view
-  and the pipeline stepper.
+- **Result**: exactly ONE JSON envelope on stdout — `{"ok":true,"result":{...}}` or
+  `{"ok":false,"error":"...","traceback":"..."}`. `ok` is transport success; domain outcomes
+  live inside `result`. Anything else on stdout is treated as `ENGINE_BAD_OUTPUT` and the raw
+  bytes are surfaced in Developer Diagnostics.
+- **Live logs**: `STAGE|status|detail|progress` lines and all other output on stderr, streamed
+  to the UI's log view, the pipeline stepper, and the diagnostics panel.
 
 `bridge.py` calls the exact same code paths as the `architect` CLI — single source of truth.
 

@@ -64,10 +64,20 @@ function CommandDetail({ c }: { c: BridgeCommand }) {
         <div className="label">Invocation</div>
         <pre className="rounded-xl bg-ink-950 border border-white/10 p-3 text-xs text-ink-300 overflow-auto whitespace-pre-wrap">{c.argv}</pre>
       </div>
+      <div>
+        <div className="label">stdout {c.error === 'ENGINE_BAD_OUTPUT' ? '(protocol violation — should be one JSON envelope)' : '(JSON envelope)'}</div>
+        <pre className={`rounded-xl bg-ink-950 border p-3 text-xs overflow-auto whitespace-pre-wrap ${c.error === 'ENGINE_BAD_OUTPUT' ? 'border-rose-500/40 text-rose-200' : 'border-white/10 text-ink-300'}`}>{c.rawStdout || '(empty)'}</pre>
+      </div>
       {c.stderrTail && (
         <div>
-          <div className="label">Engine output (tail)</div>
+          <div className="label">stderr (logs, tail)</div>
           <pre className="rounded-xl bg-ink-950 border border-white/10 p-3 text-xs text-ink-400 overflow-auto whitespace-pre-wrap">{c.stderrTail}</pre>
+        </div>
+      )}
+      {c.traceback && (
+        <div>
+          <div className="label">Engine traceback</div>
+          <pre className="rounded-xl bg-ink-950 border border-rose-500/30 p-3 text-xs text-rose-200 overflow-auto whitespace-pre-wrap">{c.traceback}</pre>
         </div>
       )}
     </div>

@@ -18,8 +18,12 @@ export interface BridgeResponse {
   ok: boolean
   data?: any
   error?: string
+  /** python traceback when the engine raised (from the failure envelope) */
+  traceback?: string
   /** raw stage lines emitted by the engine (for live logs) */
   stderr?: string
+  /** exact bytes the engine wrote to stdout (shown verbatim on ENGINE_BAD_OUTPUT) */
+  rawStdout?: string
 }
 
 // ---------- Developer Diagnostics: record every command sent to bridge.py ----------
@@ -34,8 +38,11 @@ export interface BridgeCommandRecord {
   argv: string          // exactly what is passed to the interpreter
   ok?: boolean
   error?: string
+  traceback?: string
   durationMs?: number
   stderrTail?: string
+  /** full raw stdout the engine produced — the envelope, or garbage on ENGINE_BAD_OUTPUT */
+  rawStdout?: string
 }
 const commandLog: BridgeCommandRecord[] = []
 let _seq = 0
@@ -103,8 +110,10 @@ export function runBridge(
     let out = ''
     let err = ''
     const finish = (r: BridgeResponse) => {
-      rec.ok = r.ok; rec.error = r.error; rec.durationMs = Date.now() - started
-      rec.stderrTail = (r.stderr || '').split('\n').filter(Boolean).slice(-6).join('\n')
+      rec.ok = r.ok; rec.error = r.error; rec.traceback = r.traceback
+      rec.durationMs = Date.now() - started
+      rec.stderrTail = (r.stderr || '').split('\n').filter(Boolean).slice(-8).join('\n')
+      rec.rawStdout = r.rawStdout
       record({ ...rec })
       resolve(r)
     }
@@ -117,24 +126,27 @@ export function runBridge(
     })
     child.on('error', (e) => {
       logger.error(`spawn failed: ${e.message}`)
-      finish({ ok: false, error: 'PYTHON_MISSING', stderr: err })
+      finish({ ok: false, error: 'PYTHON_MISSING', stderr: err, rawStdout: out })
     })
     child.on('close', (code) => {
-      if (code !== 0) {
-        logger.error(`bridge ${command} exited ${code}: ${err.slice(-800)}`)
-        // engine prints a JSON error object on the last stdout line when it can
-        let parsed: any = null
-        try { parsed = JSON.parse(out.trim().split('\n').pop() || '') } catch { /* ignore */ }
-        finish({ ok: false, error: parsed?.error || 'ENGINE_ERROR', stderr: err })
+      // STRICT PROTOCOL: stdout is exactly one JSON envelope. Parse it regardless of exit code.
+      const lastLine = out.trim().split('\n').filter(Boolean).pop() || ''
+      let env: any = null
+      try { env = JSON.parse(lastLine) } catch { /* not JSON */ }
+
+      if (env && typeof env.ok === 'boolean') {
+        if (env.ok) {
+          finish({ ok: true, data: env.result, stderr: err, rawStdout: out })
+        } else {
+          logger.error(`bridge ${command} engine error: ${env.error}\n${env.traceback || ''}`)
+          finish({ ok: false, error: env.error || 'ENGINE_ERROR', traceback: env.traceback, stderr: err, rawStdout: out })
+        }
         return
       }
-      try {
-        const data = JSON.parse(out.trim().split('\n').pop() || '{}')
-        finish({ ok: true, data, stderr: err })
-      } catch (e) {
-        logger.error(`bridge ${command} bad JSON: ${(e as Error).message}`)
-        finish({ ok: false, error: 'ENGINE_BAD_OUTPUT', stderr: err })
-      }
+
+      // No valid envelope on stdout → protocol violation. Surface the raw stdout for debugging.
+      logger.error(`bridge ${command}: no JSON envelope on stdout (exit ${code}). stdout=${out.slice(0, 800)}`)
+      finish({ ok: false, error: 'ENGINE_BAD_OUTPUT', stderr: err, rawStdout: out })
     })
   })
 }

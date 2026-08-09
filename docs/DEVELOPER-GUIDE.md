@@ -60,18 +60,38 @@ npm run build            # electron-vite build → out/
 npm run build:win        # or build:mac — electron-builder installers
 ```
 
-## Analyzer input contract + Developer Diagnostics
+## Bridge protocol (strict JSON API)
 
-- The app passes the **absolute** input folder to the engine explicitly:
-  `analyze { input: "<project>/input", project, irDir, builder }`. The engine must NOT infer
-  the input directory — if `input` is absent it returns `{status:"error", reason:"no_input_path"}`.
-- `bridge.py` logs the received path and every file found (to stderr → the live log), accepts
-  PNG/JPG/JPEG/WebP/PDF case-insensitively, detects one page per mockup (title from filename),
-  and returns `{status, reason, input, files_scanned, supported_files, detected_pages}`.
-- **Developer Diagnostics** (sidebar → Diagnostics): `compilerBridge.ts` records every command
-  sent to `bridge.py` (command, args, exact argv, timing, ok/fail, stderr tail) into a ring
-  buffer, streamed to the renderer via `diagnostics:command` / `diagnostics:list`. Use it to see
-  precisely what the UI asked the engine to do.
+`bridge.py` speaks a strict envelope so stray output can never corrupt the channel:
+
+- **stdout** = exactly ONE JSON envelope, nothing else:
+  - success → `{"ok": true, "result": {...}}`
+  - failure → `{"ok": false, "error": "...", "traceback": "..."}`
+- **stderr** = logs only: progress (`STAGE|status|detail|progress`), scan logs, and any stray
+  `print()` from imported modules (the handler runs under `redirect_stdout(sys.stderr)`).
+- `ok` is **transport** success (the bridge ran). **Domain** outcomes (no pages, IR invalid)
+  live inside `result` with their own `status`/`ok` — so the app tells "engine crashed" apart
+  from "engine ran and found nothing".
+
+`compilerBridge.ts` parses the last stdout line as the envelope: `env.ok` → `data = env.result`;
+`!env.ok` → surfaces `env.error` + `env.traceback`; no valid envelope → `ENGINE_BAD_OUTPUT` with
+the raw stdout attached.
+
+## Analyzer input contract
+
+- The app passes the **absolute** input folder explicitly:
+  `analyze { input: "<project>/input", project, irDir, builder }`. The engine never infers it —
+  absent `input` → `result.reason = "no_input_path"`.
+- The engine logs the path + every file found (stderr), accepts PNG/JPG/JPEG/WebP/PDF
+  case-insensitively, detects one page per mockup (title from filename), and returns
+  `{status, reason, input, files_scanned, supported_files, detected_pages}`.
+
+## Developer Diagnostics
+
+Sidebar → Diagnostics. `compilerBridge.ts` records every command (command, args, exact argv,
+timing, ok/fail, **raw stdout**, stderr tail, traceback) into a ring buffer, streamed via
+`diagnostics:command` / `diagnostics:list`. On `ENGINE_BAD_OUTPUT` the error panels auto-show
+the raw stdout (`components/EngineOutput.tsx`) so a protocol violation is instantly visible.
 
 ## Conventions
 

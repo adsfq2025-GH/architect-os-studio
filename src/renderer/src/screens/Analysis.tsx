@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../store'
 import { studio } from '../lib/ipc'
 import { Stepper, LogView, ProgressBar, Badge } from '../components/ui'
+import { EngineOutput } from '../components/EngineOutput'
 import type { AnalyzeResult } from '../lib/types'
 
 export default function Analysis({ projectId }: { projectId: string }) {
@@ -91,6 +92,7 @@ export default function Analysis({ projectId }: { projectId: string }) {
               Files present but unsupported/undetected: {filesScanned.join(', ')}
             </div>
           )}
+          {(res?.reason === 'ENGINE_BAD_OUTPUT' || res?.error === 'ENGINE_BAD_OUTPUT') && <EngineOutput />}
           <div className="mt-5 flex gap-3">
             <button className="btn-ghost" onClick={() => go({ name: 'upload', projectId })}>Back to Upload</button>
             <button className="btn-ghost" onClick={() => go({ name: 'diagnostics' })}>Open Developer Diagnostics</button>

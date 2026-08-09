@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../store'
 import { studio } from '../lib/ipc'
 import { Stepper, LogView, ProgressBar } from '../components/ui'
+import { EngineOutput } from '../components/EngineOutput'
 
 const PIPELINE = ['Parsed', 'Analyzed', 'IR Generated', 'Translated', 'Packaged', 'Kit Valid', 'QA', 'Delivered']
 
@@ -67,6 +68,7 @@ export default function Generate({ projectId }: { projectId: string }) {
           <div className="text-lg font-semibold text-rose-300">{err.title}</div>
           <p className="mt-1 text-sm text-ink-300">{err.message}</p>
           <p className="mt-3 text-sm text-ink-400">{err.action}</p>
+          <EngineOutput />
           <div className="mt-5 flex gap-3">
             <button className="btn-ghost" onClick={() => go({ name: 'blueprint', projectId })}>Back to Blueprint</button>
             <button className="btn-primary" onClick={() => { started.current = false; go({ name: 'generate', projectId }) }}>Try Again</button>

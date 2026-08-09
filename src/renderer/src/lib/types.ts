@@ -77,8 +77,10 @@ export interface BridgeCommand {
   argv: string
   ok?: boolean
   error?: string
+  traceback?: string
   durationMs?: number
   stderrTail?: string
+  rawStdout?: string
 }
 
 export interface CompileResult {
