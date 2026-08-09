@@ -27,10 +27,14 @@ jobs:
         if: ${{ hashFiles('engine/bridge.py') == '' }}
         uses: actions/checkout@v4
         with:
-          repository: ${{ vars.ENGINE_REPO || github.repository_owner }}/Architect-OS
+          # engine repo name is case-insensitive on GitHub (architect-os == Architect-OS)
+          repository: ${{ vars.ENGINE_REPO || github.repository_owner }}/architect-os
           ref: ${{ github.event.inputs.engine_ref || 'main' }}
           path: engine-src
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # default GITHUB_TOKEN can only read THIS repo; to read a PRIVATE engine repo add a
+          # repo secret ENGINE_TOKEN (a PAT with Contents:read on architect-os). If the engine
+          # repo is public, the default token works and no secret is needed.
+          token: ${{ secrets.ENGINE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Set ENGINE_SRC
         shell: pwsh
